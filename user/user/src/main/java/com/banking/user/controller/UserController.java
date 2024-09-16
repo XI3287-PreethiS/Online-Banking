@@ -1,9 +1,9 @@
-package com.banking.user.controller;
+package com.online.banking.user.controller;
 
-import com.banking.user.dto.UserRequestDto;
-import com.banking.user.dto.UserResponseDto;
-import com.banking.user.service.UserService;
-import com.banking.user.util.ConstantUtil;
+import com.online.banking.user.dto.UserRequestDto;
+import com.online.banking.user.dto.UserResponseDto;
+import com.online.banking.user.service.UserService;
+import com.online.banking.user.util.ConstantUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

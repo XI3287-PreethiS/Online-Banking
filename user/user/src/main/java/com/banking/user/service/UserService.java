@@ -1,7 +1,7 @@
-package com.banking.user.service;
+package com.online.banking.user.service;
 
-import com.banking.user.dto.UserRequestDto;
-import com.banking.user.dto.UserResponseDto;
+import com.online.banking.user.dto.UserRequestDto;
+import com.online.banking.user.dto.UserResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -13,7 +13,8 @@ public interface UserService {
     String forgotPassword(String email);
     UserResponseDto changePassword(UserRequestDto userRequestDto);
     Page<UserResponseDto> getAllUsers(Pageable pageable);
-    UserResponseDto getUserById(Long id);
+    UserResponseDto getUserById(Long userId);
     List<UserResponseDto> searchUsers(String email, boolean isActive, boolean isBlocked);
     String logout();
+
 }

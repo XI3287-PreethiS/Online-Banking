@@ -1,11 +1,15 @@
-package com.banking.user.service;
+package com.online.banking.user.service;
 
-import com.banking.user.dto.UserRequestDto;
-import com.banking.user.dto.UserResponseDto;
-import com.banking.user.exception.*;
-import com.banking.user.model.User;
-import com.banking.user.repository.UserRepository;
-import com.banking.user.util.ConstantUtil;
+import com.online.banking.user.client.AccountClient;
+import com.online.banking.user.client.CardClient;
+import com.online.banking.account.dto.AccountRequsetDto;
+import com.online.banking.card.dto.CardRequsetDto;
+import com.online.banking.user.dto.UserRequestDto;
+import com.online.banking.user.dto.UserResponseDto;
+import com.online.banking.user.exception.*;
+import com.online.banking.user.model.User;
+import com.online.banking.user.repository.UserRepository;
+import com.online.banking.user.util.ConstantUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -21,10 +25,43 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
+    private final AccountClient accountClient;
+    private final CardClient cardClient;
 
     @Override
     public UserResponseDto registerUser(UserRequestDto userRequestDto) {
         // Validate mandatory fields
+        validateUserRequest(userRequestDto);
+
+        // Check if user already exists
+        if (userRepository.findByEmail(userRequestDto.getEmail()).isPresent()) {
+            throw new UserAlreadyExistsException(ConstantUtil.USER_ALREADY_EXISTS);
+        }
+
+        // Create and save new user
+        User user = modelMapper.map(userRequestDto, User.class);
+        user.setActive(true);  // Default to active
+        user.setBlocked(false);  // Default to not blocked
+        userRepository.save(user);
+
+        // Create account and card automatically
+        createAccountAndCard(user.getUserId());
+
+        // Return response DTO
+        return modelMapper.map(user, UserResponseDto.class);
+    }
+
+    private void createAccountAndCard(Long userId) {
+        // Create Account using AccountClient
+        AccountRequestDto accountRequestDto = new AccountRequestDto(userId, "SAVINGS", true);
+        accountClient.createAccount(accountRequestDto);
+
+        // Create Card using CardClient (deactivated by default)
+        CardRequestDto cardRequestDto = new CardRequestDto(userId, false);
+        cardClient.createCard(cardRequestDto);
+    }
+
+    private void validateUserRequest(UserRequestDto userRequestDto) {
         if (userRequestDto.getName() == null || userRequestDto.getName().isBlank()) {
             throw new IllegalArgumentException(ConstantUtil.NAME_MANDATORY);
         }
@@ -34,22 +71,7 @@ public class UserServiceImpl implements UserService {
         if (userRequestDto.getPassword() == null || userRequestDto.getPassword().isBlank()) {
             throw new IllegalArgumentException(ConstantUtil.PASSWORD_MANDATORY);
         }
-
-        // Check if user already exists
-        if (userRepository.findByEmail(userRequestDto.getEmail()).isPresent()) {
-            throw new UserAlreadyExistsException(ConstantUtil.USER_ALREADY_EXISTS);
-        }
-
-        // Create and save new user
-        User user = modelMapper.map(userRequestDto, User.class);
-        user.setActive(true); // Default new users to active
-        user.setBlocked(false); // Default new users to not blocked
-        userRepository.save(user);
-
-        // Return response DTO
-        return modelMapper.map(user, UserResponseDto.class);
     }
-
 
     @Override
     public UserResponseDto loginUser(UserRequestDto userRequestDto) {
@@ -94,8 +116,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponseDto getUserById(Long id) {
-        User user = userRepository.findById(id)
+    public UserResponseDto getUserById(Long userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(ConstantUtil.NO_USERS_FOUND));
         return modelMapper.map(user, UserResponseDto.class);
     }
